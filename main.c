@@ -1,105 +1,172 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
 
 char board[3][3];
-char currentPlayer = 'X';
+const char PLAYER = 'X';
+const char COMPUTER = 'O';
 
-/* Function to initialize the board */
-void initializeBoard() {
-    for (int i = 0; i < 3; i++)
-        for (int j = 0; j < 3; j++)
+void resetBoard();
+void printBoard();
+int checkFreeSpaces();
+void playerMove();
+void computerMove();
+char checkWinner();
+void printWinner(char winner);
+
+int main()
+{
+    char winner = ' ';
+    char response = ' ';
+
+    srand(time(0));
+
+    do
+    {
+        winner = ' ';
+        response = ' ';
+        resetBoard();
+
+        while(winner == ' ' && checkFreeSpaces() != 0)
+        {
+            printBoard();
+            playerMove();
+            winner = checkWinner();
+            if(winner != ' ' || checkFreeSpaces() == 0)
+                break;
+
+            computerMove();
+            winner = checkWinner();
+        }
+
+        printBoard();
+        printWinner(winner);
+
+        printf("\nPlay again? (Y/N): ");
+        scanf(" %c", &response);
+    } while(response == 'Y' || response == 'y');
+
+    return 0;
+}
+
+//---------------------------
+
+void resetBoard()
+{
+    for(int i=0;i<3;i++)
+        for(int j=0;j<3;j++)
             board[i][j] = ' ';
 }
 
-/* Function to print the board */
-void printBoard() {
+void printBoard()
+{
     printf("\n");
-    for (int i = 0; i < 3; i++) {
+    for(int i=0;i<3;i++)
+    {
         printf(" %c | %c | %c ", board[i][0], board[i][1], board[i][2]);
-        if (i < 2)
-            printf("\n---|---|---\n");
+        if(i!=2) printf("\n---|---|---\n");
     }
     printf("\n\n");
 }
 
-/* Check if current player won */
-int checkWin() {
-    for (int i = 0; i < 3; i++) {
-        if (board[i][0] == currentPlayer &&
-            board[i][1] == currentPlayer &&
-            board[i][2] == currentPlayer)
-            return 1;
+int checkFreeSpaces()
+{
+    int freeSpaces = 9;
+    for(int i=0;i<3;i++)
+        for(int j=0;j<3;j++)
+            if(board[i][j] != ' ')
+                freeSpaces--;
 
-        if (board[0][i] == currentPlayer &&
-            board[1][i] == currentPlayer &&
-            board[2][i] == currentPlayer)
-            return 1;
-    }
-
-    if (board[0][0] == currentPlayer &&
-        board[1][1] == currentPlayer &&
-        board[2][2] == currentPlayer)
-        return 1;
-
-    if (board[0][2] == currentPlayer &&
-        board[1][1] == currentPlayer &&
-        board[2][0] == currentPlayer)
-        return 1;
-
-    return 0;
+    return freeSpaces;
 }
 
-/* Check for draw */
-int checkDraw() {
-    for (int i = 0; i < 3; i++)
-        for (int j = 0; j < 3; j++)
-            if (board[i][j] == ' ')
-                return 0;
-    return 1;
+void playerMove()
+{
+    int x, y;
+
+    do
+    {
+        printf("Enter row (1-3) and column (1-3): ");
+        scanf("%d %d", &x, &y);
+        x--; y--;
+
+        if(board[x][y] != ' ')
+            printf("Invalid move!\n");
+
+    } while(board[x][y] != ' ');
+
+    board[x][y] = PLAYER;
 }
 
-/* Switch players */
-void switchPlayer() {
-    if (currentPlayer == 'X')
-        currentPlayer = 'O';
+void computerMove()
+{
+    // Try to win
+    for(int i=0;i<3;i++)
+        for(int j=0;j<3;j++)
+        {
+            if(board[i][j] == ' ')
+            {
+                board[i][j] = COMPUTER;
+                if(checkWinner() == COMPUTER) return;
+                board[i][j] = ' ';
+            }
+        }
+
+    // Try to block player
+    for(int i=0;i<3;i++)
+        for(int j=0;j<3;j++)
+        {
+            if(board[i][j] == ' ')
+            {
+                board[i][j] = PLAYER;
+                if(checkWinner() == PLAYER)
+                {
+                    board[i][j] = COMPUTER;
+                    return;
+                }
+                board[i][j] = ' ';
+            }
+        }
+
+    // Pick random
+    int x, y;
+    do
+    {
+        x = rand() % 3;
+        y = rand() % 3;
+    } while(board[x][y] != ' ');
+
+    board[x][y] = COMPUTER;
+}
+
+char checkWinner()
+{
+    // Rows
+    for(int i=0;i<3;i++)
+        if(board[i][0] == board[i][1] && board[i][0] == board[i][2] && board[i][0] != ' ')
+            return board[i][0];
+
+    // Columns
+    for(int i=0;i<3;i++)
+        if(board[0][i] == board[1][i] && board[0][i] == board[2][i] && board[0][i] != ' ')
+            return board[0][i];
+
+    // Diagonals
+    if(board[0][0] == board[1][1] && board[0][0] == board[2][2] && board[0][0] != ' ')
+        return board[0][0];
+
+    if(board[0][2] == board[1][1] && board[0][2] == board[2][0] && board[0][2] != ' ')
+        return board[0][2];
+
+    return ' ';
+}
+
+void printWinner(char winner)
+{
+    if(winner == PLAYER)
+        printf("🎉 YOU WIN!\n");
+    else if(winner == COMPUTER)
+        printf("💻 COMPUTER WINS!\n");
     else
-        currentPlayer = 'X';
-}
-
-int main() {
-    int row, col;
-    initializeBoard();
-
-    printf("🎮 Tic Tac Toe Game\n");
-    printf("Player X vs Player O\n");
-
-    while (1) {
-        printBoard();
-        printf("Player %c, enter row (1-3) and column (1-3): ", currentPlayer);
-        scanf("%d %d", &row, &col);
-
-        row--; col--;
-
-        if (row < 0 || row > 2 || col < 0 || col > 2 || board[row][col] != ' ') {
-            printf("❌ Invalid move! Try again.\n");
-            continue;
-        }
-
-        board[row][col] = currentPlayer;
-
-        if (checkWin()) {
-            printBoard();
-            printf("🏆 Player %c wins!\n", currentPlayer);
-            break;
-        }
-
-        if (checkDraw()) {
-            printBoard();
-            printf("🤝 It's a draw!\n");
-            break;
-        }
-
-        switchPlayer();
-    }
-
-    return 0;
+        printf("😐 IT'S A DRAW!\n");
 }
